@@ -1,0 +1,98 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+-- Uncomment the following library declaration if using
+-- arithmetic functions with Signed or Unsigned values
+--use IEEE.NUMERIC_STD.ALL;
+
+-- Uncomment the following library declaration if instantiating
+-- any Xilinx primitives in this code.
+--library UNISIM;
+--use UNISIM.VComponents.all;
+
+entity ExecUnit1 is
+
+port( operand1,operand2:in std_logic_vector(3 downto 0);
+		exec_code:in std_logic_vector(2 downto 0);
+		clk,reset:in std_logic;
+		result:out std_logic_vector(3 downto 0);
+		zflag:out std_logic);
+		
+
+end ExecUnit1;
+
+ architecture Behavioral of ExecUnit1 is
+
+constant exor_not:std_logic_vector(2 downto 0):="000";
+constant and_c:std_logic_vector(2 downto 0):="001";
+constant or_c:std_logic_vector(2 downto 0):="010";
+constant shift:std_logic_vector(2 downto 0):="011";
+constant rotate:std_logic_vector(2 downto 0):="110";
+constant add:std_logic_vector(2 downto 0):="100";
+constant sub:std_logic_vector(2 downto 0):="101";
+constant nothing:std_logic_vector(2 downto 0):="111";
+
+
+
+constant compare:std_logic_vector(2 downto 0):="101";
+
+
+component Adder
+	port( X_in,Y_in: in std_logic_vector(3 downto 0);
+		C_in:in std_logic;
+		Sum_out : out std_logic_vector(3 downto 0));
+end component;
+
+component rotator
+    Port ( opr_in : in  STD_LOGIC_VECTOR (3 downto 0);
+				ror_val : in  STD_LOGIC_VECTOR (1 downto 0);
+           opr_out : out  STD_LOGIC_VECTOR (3 downto 0));
+end component;
+
+component shifter
+    Port ( opr_in : in  STD_LOGIC_VECTOR (3 downto 0);
+           shift_val : in  STD_LOGIC_VECTOR (1 downto 0);
+           shift_dir : in  STD_LOGIC;
+           opr_out : out  STD_LOGIC_VECTOR (3 downto 0));
+end component;
+
+signal add_out,ror_out,result1,shift_out:std_logic_vector(3 downto 0);
+signal zflag1:std_logic;
+
+begin
+
+zflag1<='1' when result1 = "0000" else '0';
+
+adder1:Adder port map(operand1,operand2,exec_code(0),add_out);
+ror1: rotator port map(operand1,operand2(1 downto 0),ror_out);
+shifter1: shifter port map(operand1,operand2(1 downto 0),operand2(2),shift_out);
+
+process(clk,reset)
+begin
+  
+  result<=result1;
+  zflag<=zflag1;
+  
+	if reset='1' then
+		result1 <= "0000";
+		--zflag1<='1';
+	
+	elsif rising_edge(clk) then
+		case exec_code is
+			when add => result1 <=add_out;
+			when sub => result1 <=add_out;
+			when exor_not => result1 <= (operand1 xor operand2);
+			when and_c => result1 <= (operand1 and operand2);
+			when or_c => result1 <= (operand1 or operand2);
+			when rotate => result1<=ror_out;
+			when shift => result1 <= shift_out;
+			when others => result1<= "0000";
+		end case;
+		if not exec_code=nothing then
+			zflag<=zflag1;
+		end if;
+	end if;
+end process;
+
+end Behavioral;
+
